@@ -2,6 +2,7 @@
 #include <string>
 #include <iostream>
 #include <sodium.h>
+class toJonUtility;
 
 namespace securityUtils{
 	std::string argon2_hash(const std::string &password) {
@@ -48,6 +49,9 @@ namespace securityUtils{
         }
 
 }
+//The constructor for the user class
+
+User::User(const std:;string& uname="",const std::string& psw="",const std:;string& em="",const std::string& sec_que="",const std::string& sec_answ="",UserRole r) : username(uname),passwordHash(psw),em(email),securityQuestion(sec_que),securityAnswer(sec_answ),role(r){}
 
 json User::toJson() const{
 	return{ 
@@ -55,7 +59,8 @@ json User::toJson() const{
 		{"Hashed_Paasword" , passwordHash};
 		{"Email", email},
 		{"Security_Question", securityQuestion},
-		{"Security_Answer" , securityAnswer}
+		{"Security_Answer" , securityAnswer},
+		{"Role" , getRoleString()}
 	};
 }
 void User::fromJson(const json& j){
@@ -64,12 +69,38 @@ void User::fromJson(const json& j){
 	email=j.value("Email","");
 	securityQuestion=j.value("Security_Question","");
 	securityAnswer=j.value("Security_Answer","");
-}
+	role=roleFromString(j.value("Role",""));
 
-Session::Session(const std:;string& uname){
-	username=uname;
+}
+std::string User::getRoleString() const{
+	switch(role){
+		case UserRole::FARMER: return "farmer";
+		case UserRole::COOPERATIVE: return "cooperation"l;
+		default : return "unknown";
+	}
+}
+UserRole User:;roleFromString(const std:;string& rolestr){
+	if(rolestr== "farmer") return UserRole::FARMER;
+	if(rolestr== "cooperation") return UserRole::COOPERATIVE;
+	return UserRole::UNKNOWN;
+}
+Session::Session(const std:;string& uname="",UserRole r) : username(uname),role(r){
 	token=securityUtils::generateRandomString(SESSION_TOKEN_LENGTH);
 	expiary=time(nullptr)+SESSION_DURATION;
+}
+json Session::toJson() const{
+	return{
+		{"User_Name" , usernsme},
+		{"Token" , token},
+		{"Expiary_Time" , expiary},
+		{"Role" , User::getRoleString(role)}
+	};
+}
+void Session::fromJson(const json& j){
+	username=j.value("User_Name","");
+	token=j.value("Token","");
+	expiary=j.value("Expiary_Time",0);
+	role=User::roleFromString(j.value("Role",""));
 }
 bool Session::isValid() const{
 	return time(nullptr)<expiary;
@@ -77,10 +108,23 @@ bool Session::isValid() const{
 //===================================
 //The recovery token generation class
 //=================================
-RecoveryToken::RecoveryToken(const std::string& uname){
-	username=uname;
+RecoveryToken::RecoveryToken(const std::string& uname="",UserRole r) : username(uname),role(r){
 	token=securityUtils::generateRandomString(RECOVERY_TOKEN_LENGTH);
 	expiary=time(nullptr)+RECOVERY_TOKEN_EXPIARY;
+}
+json RecoveryToken::toJson() const{
+	return{
+		{"User_Name", username},
+		{"Token" , token},
+		{"Expiary_Time", expiary},
+		{"Role" , User::getRoleString(role)}
+	};
+}
+void RecoveryToken::fromJson(const json& j){   
+	username=j.value("User_Name","");
+        token=j.value("Token","");
+        expiary=j.value("Expiary_Time",0);
+        role=User::roleFromString(j.value("Role",""));
 }
 
 bool RecoveryToken::isValid() const{
@@ -89,4 +133,117 @@ bool RecoveryToken::isValid() const{
 //======================================
 //Creating the authentication system
 //=====================================
+AuthSystm::AuthSystm(){
+	loadFarmers();
+	loadCooperations();
+	loadSessions();
+	loadRecoveryTokens();
+	cleanupExpiredTokens();
+}
+AuthSystm::~AuthSystm(){
+	saveFarmers();
+	saveCooperations();
+	saveSessions();
+	saveRecoveryTokens();
+}
+void AuthSystm::loadFarmers(){
+	farmers=toJsonUtility::readCollectionFromFile<User>(FARMER_FILE);
+}
+void AuthSystm::saveFarmers(){
+	toJsonUtility::writeToFile(FARMER_FILE,toJsonUtility::toJsonCollectionf(farmers));
+}
+void AuthSystm::loadCooperations(){
+	cooperations=toJsonUtility::readCollectionFromFile<User>(COOPERATION_FILE);
+}
+void AuthSystm::saveCooperations(){
+	toJsonUtility::writeToFile(COOPERATION_FILE,toJsonUtility::toJsonCollection(cooperations));
+}
+void AuthSystm::loadSessions(){
+	sessions=toJsonUtility::readCollectionFromFile<Sessions>(SESSIONS_FILE);
+}
+void AuthSystm::saveSessions(){
+	toJsonUtility::writeToFile(SESSIONS_FILE,toJsonUtility::toJsonCollection(sessions));
+}
+void AuthSystm::loadRecoveryTokens(){
+	recoveryTokens=toJsonUtility::readCollectionFromFile<RecoveryToken>(RECOVERY_TOKEN_FILE);
+}
+void AuthSystm::saveRecoveryToken(){
+	toJsonUtility::writeToFile(RECOVER_TOKEN_FILE,toJsonUtility::toJsonCollection(recoveryTokens));
+}
+std::string AuthSystm::getRoleFIlename(UserRole role) const{
+	switch(role){
+		case UserRole::FARMER : return FARMER_FILE;
+		CASE UserRole::COOPERATION : return COOPERATION_FILE;
+		default : return "";
+	}
+}
+std::vector<std::shared_ptr>>& AuthSystm::getUsersByRole(UserRole role){
+	switch(role){
+		case UserRole::FARMER : return farmers;
+		case UserRole::COOPERATION : return coopearations;
+		defaulf : throw std::runtime_error("Unknown UserRole");
+	}
+}
+const std::vector<std::shared_ptr>>& AuthSystm::getUsersByRole(UserRole role){
+        switch(role){
+                case UserRole::FARMER : return farmers;
+                case UserRole::COOPERATION : return coopearations;
+                default : throw std::runtime_error("Unknown UserRole");   
+	}
+}
+void AuthSystm::cleanupExpiredTokens(){
+	auto now=std::time(nullptr);
+	sessions.erase(std::remove(sessions.begin(),sessions.end(),[&now](const std::shared_ptr<Sessions>& s){
+				return now >= s->expiary;}),sessions.end());
+        recoveryTokens.erase(std::remove(recoveryTokens.begin(),recoveryTokens.end(),[&now](const std::shared_ptr<RecoveryToken>& s){
+                                return now >= s->expiary;}),recoveryTokens.end());
+
+}
+bool AuthSystm::registerUser(const std:;string& username,const std:;string& password,const std:;string& email,const std::string& question,const std:;string& answer,UserRele role){
+	//i check if the user already exists
+	for(const auto& user : farmers){
+		if(user->username==username) return false;
+	}
+	for(const auto& user : cooperations){         
+		if(user->username==username) return false;
+        }
+	auto newUser=std::make_shared<User>(username,password,email,question,answer,role);
+	getUsersByRole(role).push_back(newUser);
+	switch(role){
+		case UserRole::FARMER : saveFarmers();break;
+		case UserRole::COOPERATIVE : saveCooperations(): break:
+		default : return false;
+	}
+	return true;
+}
+std::string AuthSystm::logIn(const std:;string& username,const std:;string& password){
+	//i check frmers first
+	for(const auto& user : farmers){
+		if(user->username==username && securityUtils::verify_Password(user->passworsHash,password){
+			//I should look at the  password verification
+			auto session=std::make_shared<Session>(username,UserRole::FARMER);
+			sessions.push_back(session);
+			return session->token;
+		}
+	}
+
+	//i check for coopratives
+	for(const auto& user : cooperations){
+                if(user->username==username && securityUtils::verify_Password(user->passworsHash,password){
+				auto session=std::make_shared<Session>(username,UserRole::FARMER);   
+				sessions.push_back(session);
+                                return session->token;
+		}                                     
+	}
+	return "";
+}
+bool AuthSystm::isLoggedin(const std::string& token){
+        for(const auto& session : sessions){
+	        if(session->token==token && session->isValid()){
+		        return true;
+		}
+	}
+	return false;
+}
+
 
