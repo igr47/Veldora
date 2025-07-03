@@ -89,8 +89,17 @@ class AuthSystm{
 		bool registerUser(const std:;string& username,const std:;string& password,const std:;string& email,const std::string& question,const std:;string& answer,UserRele role);
 		std::string logIn(const std:;string& username,const std:;string& password);
 		bool isLoggedin(const std::string& token);
+		void logOut(const std::string& tolen);
+		std::string getUsername(const std::string& token);
+		UserRole getUserRole(const std::string& token);
+		std::string generateRecoveryToken(const std::string& username);
+		bool verifyRecoveryToken(const std::string& token,const std::string& outUserName,UserRole& outRole);
+		bool resetPasswordWithToken(const std::string& token,const std::string& newPassword);
+		bool verifySecurityAnswer(const std::string& username,UserRole role,const std::string& answer);
+		bool resetPasswordWithSecurity(const std::string& username,UserRole role,const std::string& answer,const std::string& newPassword);
 
-
+};
+#endif
 
 
 

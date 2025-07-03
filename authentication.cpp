@@ -246,4 +246,90 @@ bool AuthSystm::isLoggedin(const std::string& token){
 	return false;
 }
 
+void AuthSystm::logOut(const std::string& token){
+        sessions.erase(std::remove_if(sessions.begin(),sessions.end(),[&token](const std::shared_ptr<Sessions>& s){
+				return s->token==token;}),sessions.end);
+	saveSessions();
+}
+std::string AuthSystm::getUsername(const std::string& token){
+	for(const auto& session : sessions){
+		if(session->token==token && session->isValid()){
+			return session->username;
+		}
+	}
+	return "";
+}
+
+UserRole AuthSytm::getUserRole(const std::string& token){
+	for(const auto& session : sessions){
+		if(session->token==token && session->isValid()){
+			return session->role;
+		}
+	}return UserRole::UNKNOWN;
+}
+
+std::string AuthSystm::generateRecoveryToken(const std::string& username){
+	for(const auto& user : farmers){
+		if(user->username==username && !user->email.empty()){
+			auto token=std::make_shared<RecoveryToken>(username,UserRole::FARMER);
+			recoveryTokens.push_back(token);
+			saveRecoveryTokens();
+		}
+	}
+	for(const auto& user : cooperations){
+                if(user->username==username && !user->email.empty()){
+                        auto token=std::make_shared<RecoveryToken>(username,UserRole::COOPERATION;
+                        recoveryTokens.push_back(token);
+                        saveRecoveryTokens();
+                }
+        }
+	return "";
+}
+bool AuthSystm::verifyRecoveryToken(const std::string& token,const std::string& outUserName,UserRole& outRole){
+        for(const auto& rt : recoveryTokens){
+	        if(rt->token==token && rt->isValid()){
+		        outUserName=rt->username;
+			outRole=rt->role;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool AuthSytm::resetPasswordWithToken(const std::string& token,const std::string& newPassword){
+        std::string username;
+	UserRole role;
+	if(!verifyRecoveryToken(token,username,role)){
+		return false;
+	}
+	auto users=getUserByRole(role);
+	for(auto& user : users){
+		if(user->username==username){
+			user->passwordHash=//i will hash the password
+			switch(role){
+				case UserRole::FARMER: saveFarmers(); break;
+				case UserRole::COOPERATIVE: saveCooperations(); break;
+				default: return false;
+			}
+			recoveryTokens.erase(sts::remove_if(recoveryTokens.begin(),recoveryTokens.end(),[&token](const std::shared_ptr<RecoveryToken>& rt){
+						return rt->token==token;}),recoveryTokens.end());
+			saveRecoveryTokens();
+			return true;
+		}
+	}
+	return false;
+}
+bool AuthSystm::verifySecurityAnswer(const std::string& username,UserRole role,const std::string& answer){
+	const auto& users=getUserByRole(role);
+	for(const auto& user : users){
+		if(user->username==username){
+			return securityUtils::verify_answer(user->securityAnswer,answer);
+		}
+	}
+	return false;
+}
+bool AuthSystm::resetPasswordWithSecurity(const std::string& username,UserRole role,const std::string& answer,const std::string& newPassword){
+	auto& users=getUserByRole(role);
+	for(auto& user : users){
+		if(user->username==username && us
 
