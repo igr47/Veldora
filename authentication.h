@@ -86,6 +86,7 @@ class AuthSystm{
 	public:
 		AuthSystm();
 		~AuthSystm();
+		std::vector<std::shared_ptr<Session>> getSessions() const;
 		bool registerUser(const std:;string& username,const std:;string& password,const std:;string& email,const std::string& question,const std:;string& answer,UserRele role);
 		std::string logIn(const std:;string& username,const std:;string& password);
 		bool isLoggedin(const std::string& token);

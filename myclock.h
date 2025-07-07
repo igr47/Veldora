@@ -21,5 +21,6 @@ class TimestampManager{
                         if(timestamps.empty())return false;
                         return (std::chrono::system_clock::now()-timestamps.front())>=duration;
                 }
+		std::string createTimestamp();
 };
 #endif

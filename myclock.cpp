@@ -41,7 +41,7 @@ bool TimestampManager::hasMonthsPassed(int months) const{
         return diff.count()>=months;
 }
 std::vector<std::string> TimestampManager::getTimestampAsString()const{
-        std::vector<std::string results;
+        std::vector<std::string> results;
         for(const auto& tp: timestamps){
                 auto in_time_t=std::chrono::system_clock::to_time_t(tp);
                 std::stringstream ss;
@@ -51,3 +51,10 @@ std::vector<std::string> TimestampManager::getTimestampAsString()const{
         }                                                               
 	return results;
 }
+std::string createTimestamp(){
+	auto now=std::chrono::system_clock::now();
+	auto now_time_t=std::chrono::system_clock::to_time_t(now);
+	std::stringstream ss;
+	ss<<std::put_time(std::localtime(&now_time_t), "%Y-%m-%d %H:%M:%S");
+	return ss.str();
+=}

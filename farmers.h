@@ -11,7 +11,15 @@ class Farmers{
 		void loadFarmer();
 		void saveFarmer();
 	public:
+		namespace sharedUtils{
+			bool isCurrent();
+		}
 		Farmers();
 		~Farmers();
 		void myProfile();
 		void createProfile();
+		void viewProfile();
+		void editProfile();
+		void myProduce();
+		void addProduceTypes();
+		void viewProducwTypes();

@@ -170,6 +170,8 @@ void AuthSystm::loadRecoveryTokens(){
 void AuthSystm::saveRecoveryToken(){
 	toJsonUtility::writeToFile(RECOVER_TOKEN_FILE,toJsonUtility::toJsonCollection(recoveryTokens));
 }
+//Getter to get the vector 
+std::vector<std::shared_ptr<Session>> AuthSystm::getSessions() const{return sessions};
 std::string AuthSystm::getRoleFIlename(UserRole role) const{
 	switch(role){
 		case UserRole::FARMER : return FARMER_FILE;
