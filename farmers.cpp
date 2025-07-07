@@ -258,6 +258,176 @@ void Farmers::viewProduceTypes(){
 	}
 }
 
+void Farmers::recordHarvest(){
+	for(const auto& user : frm->farmersList){
+                if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			std::cout<<"\n=========RECORD MY PRODUCE=========\N";
+			std::string choise;
+			std::string record;
+			do{
+				std::cout<<"\nEnter the produce you wish to record: ";
+				std::getline(std::cin,record);
+				auto it=std::find_if(user.produce.begin(),user.produce.end(),[&record](const std::shared_ptr<ProduceRecord>& p){
+						return p->produce_type==record;
+					});
+				if(it!=user.produce.end()){
+					double quantity;
+					std::string type;
+					std::string time;
+					std::string unit;
+					std::cout<<"\nEnter  quantity: ";
+					std::cin>>quantity;
+					std::cin.ignore();
+					std::cout<<"Unit(kgs/ltrs/gms): ";
+					std::getline(std::cin,unit);
+					type=record;
+					time=TimestampManager::createTimestamp();
+					(*it)->harvestHistory.emplace_back(type,unit,time,quantity);
+					saveFarmer();
+				}else{
+					std::cout<<"\nThe produce was not found.Please add to the produce types";
+				}
+				std::cout<<"\nWould you wish to record another produce(y/n)? ";
+				std::getline(std::cin,choise);
+			}while(choise=="Y" || choise=="y");
+		}else{
+			std::cout<<"\nSorry.you were not found in the system.";
+		}
+	}
+}
+
+void Farmers::editProduceType(){
+	for(const auto& user : frm->farmersList){      
+		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			std::cout<<"\n============EDIT MY PRODUCE============\n";
+			viewProduceTypes();
+			std::string choise;
+			do{
+				std::string edit;
+				std::cout<<"\nEnter the name of the produce type you wish to edit: ";
+				std::getline(std::cin,edit);
+				auto it=std::find_if(user.produce.begin(),user.produce.end(),[&edit](const std::shared_ptr<ProduceRecords>& r){
+						return r->produce_type==edit;
+					});
+				if(it!=user.prodece.end()){
+				        std::cout<<"\nNew produce details: ";
+				        std::cout<<"\nProduce name: ";
+				        std::getline(std::cin,(*it)->produce_type);
+					std::cout<<"Unit Of Measurements: ";
+					std::getline(std::cin,(*it)->unit);
+					(*it)->update_timestamp=TimestampManager::createTimestamp();
+					saveFarmer();
+				}else{
+					std::cout<<"\nProduce not found!!";
+				}
+				std::cout<<"\nWould you like to edit another produce(y/n)? ";
+				std::getline(std::cin,choise);
+			}while(choise=="y" || choise=="Y");
+		}else{
+			std::cout<<"\nSorry.You were not found in the system!!";
+		}
+	}
+}
+
+void Farmers::deleteProduce(){
+	for(const auto& user : frm->farmersList){       
+		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			std::cout<<"\n==========DELETE PRODUCE TYPE=============\n";
+			viewProduceTypes();
+			std::string choise;
+			do{
+				std::string del;
+				std::cout<<"\nEnter the name of the produce you wish to delete: ";
+				std::getline(std::cin,del);
+				std::erase(std::remove_if(user.produce.begin(),user.produce.end(),[&del](const ProduceRecords& r){
+							return  r.produce_type==del;}),user.produce.end());
+				saveFarmer();
+				std::cout<<"\nProduce successively deleted.";
+				std::cout<<"\nWould you like to delete another item(y/n)? ";
+				std::getline(std::cin,choise);
+			}while(choise=="y" || choise=="Y");
+		}else{
+			std::cout<<"\nSorry but your details were not found in the database!!";
+		}
+	}
+}
+
+void Farmers::viewHarvestHistory(){
+	for(const auto& user : frm->farmersList){     
+		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			std::cout<<"\n=========VIEW PRODUCE HISTORY=========\n";
+			int choise;
+			std::cout<<"\nWould you like to view history of: "
+				<<"\n1.One produce"
+				<<"\n2.All produce"
+				<<"\n";
+			std::cin>>choise;
+			std::cin.ignore();
+			if(choise=1){
+				viewProduceTypes();
+				std::string choise;
+				do{
+					std::string option;
+					std::cout<<"\nEnter the name of the produce you wish to view: ";
+					std::getline(std::cin,option);
+					auto it=std::find_if(user.produce.begin(),user.produce.end(),[&option](const ProduceRecord& p){
+							return p.produce_type==option;
+						});
+					if(it!=user.produce.end()){
+						std::cout<<"\nThe records are:";
+						std::cout<<std::left
+							<<std::setw(20)<<"Produce_Type: "
+							<<std::setw(15)<<"Quantity: "
+							<<std::setw(15)<<"Units: "
+							<<std::setw(20)<<"Recorded_At: "
+							<<"\n---------------------------------------------\n";
+						for(const auto& item : (*it)->harvestHistory){
+							if(item==option){
+								std::cout<<std::left
+									<<std::setw(20)<<item.produceType
+									<<std::setw(15)<<item.quantity
+									<<std::setw(15)<<item.unit
+									<<std::setw(20)<<item.record_timestamp;
+							}
+						}
+					}else{
+						std::cout<<"\nProduce you searched for not found!";
+					}
+					std::cout<<"\nWould you like to view another produce type(y/n)? ";
+					std::getline(std::cin,choise);
+				}while(choise=="y" || choise=="Y");
+			}else(choise==2){
+				std::cout<<"\nThe records are:\n";
+                                std::cout<<std::left
+                                        <<std::setw(20)<<"Produce_Type: "
+                                        <<std::setw(15)<<"Quantity: "
+                                        <<std::setw(15)<<"Units: "
+                                        <<std::setw(20)<<"Recorded_At: "   
+					<<"\n---------------------------------------------\n";
+				for(const auto& item :  user.produce.harvestHistory){
+					std::cout<<std::left
+                                                <<std::setw(20)<<item.produceType
+                                                <<std::setw(15)<<item.quantity  
+						<<std::setw(15)<<item.unit    
+						<<std::setw(20)<<item.record_timestamp;    
+				}
+			}
+		}else{
+			std::cout<<"\nSorry but you were not found in the database!!";
+		}
+	}
+}
+				
+
+					
+
+
+
+			
+
+
+
+
 
 
 

@@ -22,4 +22,8 @@ class Farmers{
 		void editProfile();
 		void myProduce();
 		void addProduceTypes();
-		void viewProducwTypes();
+		void viewProduceTypes();
+		void viewHarvest();
+		void editProduceTypes();
+		void deleteProduce();
+		void viewHarvestHistory();
