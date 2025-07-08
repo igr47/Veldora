@@ -27,3 +27,11 @@ class Farmers{
 		void editProduceTypes();
 		void deleteProduce();
 		void viewHarvestHistory();
+		void manageInventory();
+		void AddItem();
+		void viewInventory();
+		void updateItemQuantity();
+		void recordItemUsage();
+		bool setAlertThreshold();
+		void checkLowStockAlerts();
+		void viewUsageHistory();

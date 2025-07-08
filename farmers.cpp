@@ -19,6 +19,7 @@ struct Farmers::farmersInfo{
 		int contact_number;
 		int year_of_birth;
 		std::vector<ProduceRecords> produce;
+		std::vector<InventoryItem> inventory;
 		json toJson() const{
 			json j;
 			j["UserName"]=username;
@@ -34,6 +35,11 @@ struct Farmers::farmersInfo{
 				produceArray.push_back(prod);
 			}
 			j["Produce_Records"]=produceArray;
+			json inventoryArray=json::array();
+			for(const auto& inv : inventory){
+				inventoryArray.push_back(inv);
+			}
+			j["Inventory"]=inventoryArray;
 		}
 		void fromJson(const json& j){
 			username=j.value("UserName","");
@@ -50,6 +56,14 @@ struct Farmers::farmersInfo{
 					ProduceRecords p;
 					p.fromJson(item);
 					produce.push_back(p);
+				}
+			}
+			inventory.clear();
+			if(j.contains("Inventory") && j["Inventory"].is_array()){
+				for(const auto& item : j["Inventory"]){
+					InventoryItem i;
+					i.fromJson(item);
+					inventory.push_back(i);
 				}
 			}
 		}
@@ -417,6 +431,268 @@ void Farmers::viewHarvestHistory(){
 		}
 	}
 }
+//************************************************************************************
+//Starting working on inventory management and record keeping
+//************************************************************************************
+
+void Farmers::manageInventory(){
+	int choise;
+	do{
+		std::cout<<"\n===========INVENTORY MANAGEMENT=============\n";
+		std::cout<<"\m1.Add new item: "
+			<<"\n2.View inventory: "
+			<<"\n3.Update item quantity: "
+			<<"\n4.Record item usage: "
+			<<"\n5.Check low stock Alerts: "
+			<<"\n6.View usage history: "
+			<<"\n0.Return to main menu: "
+			<<"\nEnter your choise: ";
+		std::cin>>choise;
+
+		switch(choise){
+			case 1:AddItem(); break;
+			case 2: viewInventory(); break;
+			case 3: updateItemQuantity(); break;
+			case 4: recordItemUsage(); break;
+			case 5: checkLowStockAlerts(); break;
+			case 6: viewUsageHistory(); break;
+		}
+	}while(choise!=0);
+}
+
+void Farmers::AddItem(){
+	for(const auto& user : frm->farmersList){   
+		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			std::cout<<"\n==========ADD ITEM============\n";
+			std::string choise;
+			do{
+				InventoryItem newItem;
+				std::cout<<"\nEnter details for new: ";
+				std::cout<<"\nType of item(Cow Feed,Seeds,Fertilizer,etc): ";
+				std::getline(std::cin,newItem.type);
+				std::cout<<"\nName of iem(Dairy Meal,Maize Germ): ";
+				std::getline(std::cin,newItem.name);
+				std::cout<<"\nDescribtion: ";
+				std::getline(std::cin,newItem.describtion);
+				std::cout<<"\nQuantity: ";
+				std::cin>>newItem.quantity;
+				std::cin.ignore();
+				std::cout<<"\nUnit: ";
+				std::getline(std::cin,newItem.unit);
+				std::cout<<"\nAlert Threshold: ";
+				std::getline(std::cin,newItem.alertThreshold);
+				newItem.date_of_entry=TimestampManager::createTimestamp();
+				newItem.date_of_update=TimestampManager::createTimestamp();
+				saveFarmer();
+				std::cout<<"\nYour details were saved successively.";
+				std::cout<<"\nWould you like to add another item(y/n)? ";
+				std::getline(std::cin,choise);
+			}while(choise=="y" || choise=="Y");
+		}else{
+			std::cout<<"\nSorry but your details were not found in the database!";
+		}
+	}
+}
+ void Farmers::viewInventory(){
+	 for(const auto& user : frm->farmersList){ 
+		 if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			 std::cout<<"\==========MY INVENTORY=============\N";
+			 std::cout<<std::left<<std::setw(20)<<"Type of produce: "
+				 <<std::setw(20)<<"Name of produce: "
+				 <<std::setw(20)<<"Describtion: "
+				 <<std::setw(15)<<"Quantity: "
+				 <<std::setw(15)<<"Unit: "
+				 <<std::setw(15)<<"Alert Threshold:"
+				 <<std::setw(20)<<"Date Of Entry: "
+				 <<std::setw(20)<<"Date Of Update: "
+				 <<"\n-----------------------------------------------\n";
+			 for(const auto& item : user.inventory){
+				 std::cout<<std::left<<std::setw(20)<<item.type
+					 <<std::setw(20)<<item.name
+					 <<std::setw(20)<<item.describtion
+					 <<std::setw(15)<<item.quantity
+					 <<std::setw(15)<<item.unit
+					 <<std::setw(15)<<item.alertThreshold
+					 <<std::setw(20)<<item.date_of_entry
+					 <<std::setw(20)<<item.date_of_update;
+			}
+		}else{
+			std::cout<<"\nSorry but your details were not found in the database!!";
+		}
+	}
+}
+
+void Faremrs::updateItemQuantity(){
+	for(const auto& user : frm->farmersList){   
+		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			std::cout<<"\=========UPDATE QUANTITY==========\n";
+			viewInventory();
+			std::string choise;
+			do{
+				std::string option;
+				std::cout<<"\nEnter the name of the item to update(Maize germ,Broiler Starter,Tractors): ";
+				std::getline(std::cin,option);
+				auto it=std::find_if(user.inventory.begin(),user.inventory.end(),[&option](const InventoryItem& i){
+						return i.name==option;
+					});
+				if(it!=user.inventory.end()){
+					std::cout<<"\nEnter new quantity for " <<option<< ": ";
+					std::getline(std::cin,(*it)->quantity);
+					saveFarmer();
+					std::cout<<"\nQuamtity successively updated.";
+					std::cout<<"\nWould you like to update another item(y/n)? ";
+					std::getline(std::cin,choise);
+				}else{
+					std::cout<<"\nItem not found in the inventory.";
+				}
+			}while(choise=="y" || choise=="Y");
+		}else{
+			std::cout<<"\nSorry but your details were not found in the system!!";
+		}
+	}
+}
+
+void Farmers::recordItemUsage(){
+	for(const auto& user : frm->farmersList){
+		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			std::cout<<"\n==========USAGE RECORDING==========\n;
+			std::string choise;
+			do{
+				std::string option;
+				std::cout<<"\nEnter the name of item you wish to use: ";
+				std::getline(std::cin,option);
+				auto it=std::find_if(user.inventory.begin(),user.inventory.end(),[&option](const InventoryItem& i){
+								return i.name==option;
+							});
+				if(it!=user.inventory.end()){
+					std::string name;
+					std::string purpose;
+					std::string date_of_use;
+					std::string employeeusing;
+					double amount_used;
+					std::cout<<"\nEnter the: ";
+					std::cout<<"\nItem: ";
+					std::getline(std:;cin,name);
+					std::cout<<"\nPurpose: ";
+					std::getline(std::cin,purpose);
+					std::cout<<"\nEmployee Using: ";
+					std::getline(std::cin,employeeusing);
+					std::cout<<"\nAmount Used: ";
+					std::cin>>amount_used;
+					std::cin.ignore();
+					date_of_use=TimestampManager::createTimestamp();
+					(*it)->quantity-=amount_used;
+					(*it)->history.emplce_back(name,purpose,date_of_use,employeeusing,amount_used);
+					saveFarmer();
+					std::cout<<"\nUsage historu updated.";
+					std::cout<<"\nWould you like to record another item(y/n)? ";
+					std::geline(std::cin,choise);
+				}else{
+					std::cout<<"\nItem not found!!";
+				}
+			}while(choise=="y" || choise=="Y");
+		}else{
+			std::cout<<"\nSorry but your details were not found.";
+		}
+	}
+}
+
+bool Farmers::setAlertThreshold(){
+	for(const auto& user : frm->farmersList){    
+		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			for(const auto& item : user.inventory){
+				if(item.quantity <= item.alertThreshold){
+					std::cout<<"\n"<<item.name <<"Is below alert threshold. PLease top up amount to avoid scarcity";
+					return true;
+				}
+				return false;
+			}
+		}else{
+			std::cout<<"\nSorry but details not found,";
+		}
+	}
+}
+
+void Farmers::checklowStocAlerts(){
+	for(const auto& user : frm->farmersList){ 
+		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			std::cout<<"\n==============LOW STOCK ALERTS============\n";
+			setAlertThreshold();
+		}else{
+			<<"\nSorry your details were not found.";
+		}
+	}
+}
+
+void Farmers::viewUsageHistory(){
+	for(const auto& user : frm->farmersList){     
+		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			std::cout<<"==============USAGE HISTORY===================\n";
+			std::cout<<"\nWould you like to view usage history for:";
+			std::cout<<"\n1.One item: ";
+			std::cout<<"\n2.All items: ";
+			int opt;
+			std::cin>>opt;
+			std::cin.ignore();
+			if(opt==1){
+				viewInventory();
+				std::string choise;
+				do{
+					std::string option;
+					std::cout<<"\nEnter the name of the item you wish to view history: ";
+					std::getline(std::cin,option);
+					auto it=std::find_if(user.inventory.begin(),user.inventory.end()[&option](const InventoryItem& i){
+							return i.name==option;
+						});
+					std::cout<<std::left<<std::setw(20)<<"Item: "
+						<<std::setw(15)<<"Amount_Used: "
+						<<std::setw(20)<<"Purpose: "
+						<<std::setw(20)<<"Date Used: "
+						<<std::setw(20)<<"Employee Using: "
+						<<"\n--------------------------------------\n";
+					for(const auto& item : user.inventory){
+						if(item.name==(*it)->name){
+							std::cout<<std::left<<std::setw(20)<<item.name
+								<<std::setw(15)<<item.amount_used
+								<<std::setw(20)<<item.purpose
+								<<std::setw(20)<<item.date_used
+								<<std::setw(20)<<item.employee_using;
+						}
+					}
+					std::cout<<"\nWould you like to view history of another produce(y/n)? ";
+					std::getline(std::cin,choise);
+				}while(choise=="y" || choise=="Y");
+			}else(opt==2){
+				std::cout<<std::left<<std::setw(20)<<"Item: "
+                                        <<std::setw(15)<<"Amount_Used: " 
+					<<std::setw(20)<<"Purpose: "   
+					<<std::setw(20)<<"Date Used: "
+                                        <<std::setw(20)<<"Employee Using: "
+                                        <<"\n--------------------------------------\n";
+				for(const auto& item : user.inventory){
+					std::cout<<std::left<<std::setw(20)<<item.name
+						<<std::setw(15)<<item.amount_used
+                                                <<std::setw(20)<<item.purpose
+                                                <<std::setw(20)<<item.date_used
+                                                <<std::setw(20)<<item.employee_using;     
+				}
+			}
+		}else{
+			std::cout<<"\nSorry but your details were not found in the database.";
+		}
+	}
+}
+
+
+				
+
+
+
+
+
+
+
+
 				
 
 					

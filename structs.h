@@ -75,6 +75,76 @@ struct ProduceRecords{
 		}
 	}
 };
+//Struct for inventory of items
+struct InventoryItem {
+    struct UsageHistory{
+	    std::string name;
+	    std::string purpose;
+	    std::string date_used;
+	    std::string employee_using;
+	    double amount_used;
+	    json toJson() const{
+		    return{
+			    {"Item" , name},
+			    {"Purpose_Of_Item", purpose},
+			    {"Date_Used" , date_used},
+			    {"Employee_Using", employee_using},
+			    {"Amount_Used" ,amount_used}
+			};
+	    }
+	    void fromJson(const json& j){
+		    name=j.value("Item","');
+		    purpose=j.value("Purpose_Of_Item","");
+		    date_used=j.value("Date_Used","");
+		    employee_using=j.value("Employee_Using","");
+		    amount_used=j.value("Amount_Used","");
+	    }
+    };
+
+    std::string name; // "Maize Germ",,"Chicken Starter","Tractors"
+    std::string type; // "Seed", "Fertilizer", "Equipment", "CowFeed","ChickenFeed",etc.
+    std::string descrition;
+    std::string date_of_entry;
+    std::string date_of_uodate;
+    double quantity; // "90",etc
+    std::string unit; // "kg", "liters", "units", etc.
+    double alertThreshold; // Minimum quantity before alert 
+    std::vector<UsageHistory> history;
+    json toJson() const { 
+	    json usageHistoryJson;
+	    for(const auto& his : history){
+		    usageHistoryJson.push_back(his.toJson());
+	    }
+	    return {                                                             
+		    {"Name", name},
+                    {"Type", type},
+		    {"Describtion",describtion},
+		    {"Date_Of_Entry",date_of_entry},
+		    {"Date_Of_Update",date_of_update},
+                    {"Quantity", quantity},
+                    {"Unit", unit},
+                    {"AlertThreshold", alertThreshold},
+                    {"UsageHistory", usageHistoryJson}
+          };
+    }
+
+    void fromJson(const json& j) {
+        name = j.value("Name", "");
+        type = j.value("Type", "");
+	describtion=j.value("Describtion","");
+	date_of_entry=j.value("Date_Of_Entery","");
+	date_of_update=j.value("Date_Of_Update","");
+        quantity = j.value("Quantity", 0.0);
+        unit = j.value("Unit", "");
+        alertThreshold = j.value("AlertThreshold", 0.0);
+        history.clear();
+	for(const auto& historyJson : j.value("UsageHistory",json::array())){
+		UsageHistory hist;
+		hist.fromJson(historyJson);
+		history.push_back(hist);
+	}
+    }
+};
 
 
 	
