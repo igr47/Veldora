@@ -35,3 +35,10 @@ class Farmers{
 		bool setAlertThreshold();
 		void checkLowStockAlerts();
 		void viewUsageHistory();
+		void manageTasks();
+		void addTasks();
+		void viewTasks();
+		void editTasks();
+		void markAsComplete();
+		bool isComplete();
+		void checkOverdueTasks();

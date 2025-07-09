@@ -146,5 +146,36 @@ struct InventoryItem {
     }
 };
 
+struct TaskManager{
+	std::string name;
+	std::string describtion;
+	std::string created_at;
+	std::string due_date;
+	std::string priority;
+	std::string updated_at;
+	bool complete;
+
+	json toJson() const{
+		return{
+			{"Task_Name",name},
+			{"Task_Describtion",describtion},
+			{"Created_At",created_at},
+			{"Due_Date",due_date},
+			{"Priority",priority},
+			{"Updated_At",updated_at},
+			{"Is_Complete",copmlete},
+		}
+	}
+	void fromJson(const json& j){
+		name=j.value("Task_Name","");
+		describtion=j.value("Task_Describtion","");
+		created_at=j.value("Created_At","");
+		due_date=j.value("Due_Dae","");
+		priority=j.value("Priority","");
+		update_at=j.value("Updated_At","");
+		complete=j.value("Is_Copmlete",false);
+	}
+};
+
 
 	

@@ -20,6 +20,7 @@ struct Farmers::farmersInfo{
 		int year_of_birth;
 		std::vector<ProduceRecords> produce;
 		std::vector<InventoryItem> inventory;
+		std::vector<TaskManager> task;
 		json toJson() const{
 			json j;
 			j["UserName"]=username;
@@ -40,6 +41,11 @@ struct Farmers::farmersInfo{
 				inventoryArray.push_back(inv);
 			}
 			j["Inventory"]=inventoryArray;
+			json taskArray=json::array();
+			for(const auto& tsk : task){
+				taskArray.push_back(tsk);
+			}
+			j["FarmingTasks"]=taskArray;
 		}
 		void fromJson(const json& j){
 			username=j.value("UserName","");
@@ -64,6 +70,14 @@ struct Farmers::farmersInfo{
 					InventoryItem i;
 					i.fromJson(item);
 					inventory.push_back(i);
+				}
+			}
+			task.clear();
+			if(j.contains("FarmingTAsks") && j["FarmingTasks"].isarray()){
+				for(const auto& item : j["FarmingTasks"]){
+					TaskManager t;
+					t.fromJson(item);
+					task.push_back(t);
 				}
 			}
 		}
@@ -682,6 +696,216 @@ void Farmers::viewUsageHistory(){
 		}
 	}
 }
+
+void Farmers::ManageTasks(){
+	int choise;
+	do{
+		std::cout<<"\n===========TASK MANAGER==============\n";
+		std::cout<<"\n1.Add task: "
+			<<"\n2.View tasks: "
+			<<"\n3.Edit tasks: "
+			<<"\n4.Mark as complete: "
+			<<"\n5.Check overdue tasks: "
+			<<"\n6.Dealete task: "
+			<<"\n7.view Task history: "
+			<<"\n0.Return to main menu: "
+			<<"\nEnter your choise:";
+		std::cin choise;
+		std::cin.ignore();
+		switch(choise){
+			case 1: addTasks(); break;
+			case 2: viewTasks(); break;
+			case 3: editTasks(); break;
+			case 4: markAsComplete(); break;
+			case 5: checkOverdueTasks(); break;
+			case 6: deleteTasks(); break;
+			case 7: viewTaskHistory(); break;
+			default: std::cout<<"\nPlease enter options(1-7)"; break;
+		}
+	}while(choise!=0);
+}
+
+void Farmers::addTasks(){
+	for(const auto& user : frm->farmersList){
+                if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			std::string  choise;
+			std::cout<<"\n===========TASK ADDER===========\n";
+			do{
+				TaskManager newTask;
+				std::cout<<"\nEnter details for: ";
+				std::cout<<"\nTask name: ";
+				std::getline(std::cin,newTask.name);
+				std::cout<<"\nTask describtion: ";
+				std::getline(std::cin,newTask.describtion);
+				std::cout<<"\nTask priority(High,Low,Medium): ";
+				std::getline(std::cin,newTask.priority);
+				std::cout<<"\nDue date(YY-MM-DD H-M-S): ";
+				std::getline(std::cin,newTask.due_date);
+				newTask.complete=false;
+				newTask,created_at=TimestampManager::createTimestamp();
+				newTask.updated_at=TimestampManager::createTimestamp();
+				user.task.push_back(newTask);
+				saveFarmer();
+				std::cout<<"\nYour details were saved successvely!!";
+				std::cout<<"\nWould you like to add another task(y/n)? ";
+				std::getline(std::cin,choise);
+			}while(choise=="y" ||choise=="Y");
+		}else{
+			std::cout<<"\nSorry but your details were not found in the database.";
+		}
+	}
+}
+
+void Farmers::viewTasks(){
+	for(const auto& user : frm->farmersList){
+                if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			std::cout<<"\n==========TASK AVAILABLE=============\n";
+			std::cout<<std::left<<std::setw(25)<<"Task"
+				<<std::setw(25)<<"Describtion"
+				<<std::setw(15)<<"Priority"
+				<<std::setw(15)<<"Created_At"
+				<<std::setw(15)<<"Updated_at"
+				<<std::setw(15)<<"Due_Date"
+				<<std::setw(10)<<"Is_complete"
+				<<"\n-------------------------------\n";
+			for(const auto& item : user.task){
+				std::cout<<std::left<<std::setw(25)<<item.name
+					<<std::setw(25)<<(item.describtion.length()>24 ? item.describtion.substr(0,24) + "..." : item.describtion)
+					<<std::setw(15)<<item.priority
+					<<std::setw(15)<<item.created_at
+					<<std::setw(15)<<item.updated_at
+					<<std::setw(15)<<item.due_date
+					<<std::setw(10)<<(item.copmlete ? "✓✓" : "xx");
+			}
+		}else{
+			std::cout<<"\nYour details were not found in the database.";
+		}
+	}
+}
+
+void Farmers::editTasks(){
+	for(const auto& user : frm->farmersList){
+                if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			std::cout<<"\n===========EDIT TASKS==========\n";
+			std::string choise;
+			viewTasks();
+			do{
+				std::string option;
+				std::cout<<"\nEnter the name of task you wish to edit: ";
+				std::getline(std::cin,option);
+				auto it<<std::find_if(user.task.begin(),user.task.end(),[&option](const TaskMnager& t){
+						return t.name==option;
+					})
+				std::cout<<"\n1.Task name: "<<(*it)->name
+					<<"\n2.Task describtion: "<<(*it)->describtion
+					<<"\n3.Task priority: "<<(*it)->priority
+					<<"\n4.Due Date: "<<(*it)->due_date
+					<<"\nEnter option(1-4) and 0 to return: ";
+				int opt;
+				std::cin>>opt;
+				std::cin.ignore();
+				switch(opt){
+					case 0: return;
+					case 1:
+						std::cout<<"\nEnter new name: ";
+						std::getline(std::cin,(*it)->name);
+						saveFarmer();
+						break;
+					case 2:
+						std::cout<<"\nEnter new describtion: ";
+						std::getlin(std::cin,(*it)->describtion);
+						saveFarmers();
+						break;
+					case 3:
+						std::cout<<"\nEnter new priority type: ";
+						std::getline(std::cin,(*it)->priority);
+						saveFarmer();
+						break;
+					case 4:
+						std::cout<<"\nEnter new due date: ";
+						std::getline(std::cin,(*it)->due_date);
+						saveFarmer();
+						break;
+					default:
+						std::cout<<"\nPlease enter options (1-4).";
+						break;
+				}
+				std::cout<<"\nWould you like to edit another task(y/n)? ";
+				std::getline(std::cin,choise);
+			}while(choise=="y" || choise=="Y");
+		}else{
+			std::cout<<"\nSorry but your details were not found in the system!!";
+		}
+	}
+}
+
+void Farmers::markAsComplete(){
+	for(const auto& user : frm->farmersList){
+                if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			std::cout<<"\n============MARK AS COMPLETE============\n";
+			std::string choise;
+			do{
+				std::cout<<"\nEnter the name of task you wish to mark as complete: ";
+				std::string option;
+				std::getline(std::cin,option);
+				auto it=std::find_if(user.task.begin(),user.task.end(),[&option](const TaskManager& t){
+						return t.name==name;
+					});
+				if((*it)->complete=false){
+					std::cout<<"\nWould you like to mark "<<option <<" as complete(y/n)? ";
+					std::string opt;
+					std::getline(std::cin,opt);
+					if(opt=="y" || opt=="Y"){
+				                (*it)->complete=true;
+						saveFarmer();
+					}else{
+						return;
+					}
+				}
+				std::cout<<"\nWould you like to mark another task as complete(y/n)? ";
+				std::getline(std::cin,choise);
+			}while(choise=="y" || choise=="Y");
+		}else{
+			std::cout<<"\nSorry but your details were not found in the databse.";
+		}
+	}
+}
+
+bool isComplete(){
+	for(const auto& user : frm->farmersList){
+                if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			for(const auto& item : user.task){
+				if(item.due_date < TimestampManager::createTimestamp()){
+					std::cout<<"\nTask  name: "<<item.name
+						<<"\nTask priority: "<<item.priority
+						<<"\nTask describtion: "<<item.describtion
+						<<"\nCReated At: "<<item.created_at
+						<<"\n****DUE DATE****: "<<item.due_date;
+					std::cout<<"\n**************"<<item.name <<"is due*******************";
+					return true;
+				}
+				return false;
+			}
+		}else{
+			std::cout<<"\nSorry but details were not found in the database.";
+		}
+	}
+}
+
+void Farmers::checkOverdueTaska(){
+	for(const auto& user : frm->farmersList){
+                if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			isComplete();
+		}else{
+			std::cout<<"\nSorry but your details were not found in the database.";
+		}
+	}
+}
+
+
+
+
+
 
 
 				
