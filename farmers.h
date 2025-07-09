@@ -1,4 +1,4 @@
-#ifdef FARMERS_H
+#ifndef FARMERS_H
 #define FARMERS_H
 #include <string>
 #include <vector>
@@ -11,9 +11,6 @@ class Farmers{
 		void loadFarmer();
 		void saveFarmer();
 	public:
-		namespace sharedUtils{
-			bool isCurrent();
-		}
 		Farmers();
 		~Farmers();
 		void myProfile();
@@ -23,7 +20,7 @@ class Farmers{
 		void myProduce();
 		void addProduceTypes();
 		void viewProduceTypes();
-		void viewHarvest();
+		void recordHarvest();
 		void editProduceTypes();
 		void deleteProduce();
 		void viewHarvestHistory();
@@ -42,3 +39,5 @@ class Farmers{
 		void markAsComplete();
 		bool isComplete();
 		void checkOverdueTasks();
+};
+#endif

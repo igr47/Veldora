@@ -1,10 +1,15 @@
 #include "farmers.h"
 #include "structs.h"
+#include "fileSaver.h"
+#include "authentication.h"
 #include <nlohmann/json.hpp>
+#include <iostream>
+#include <vector>
+#include <string>
+#include <string>
 using json=nlohmann::json;
 
-class toJsonUtility;
-class AuthSystm;
+
 class TimestampManager;
 
 
@@ -33,19 +38,20 @@ struct Farmers::farmersInfo{
 			j["Contact"]=contact_number;
 			json produceArray=json::array();
 			for(const auto& prod : produce){
-				produceArray.push_back(prod);
+				produceArray.push_back(prod.toJson());
 			}
 			j["Produce_Records"]=produceArray;
 			json inventoryArray=json::array();
 			for(const auto& inv : inventory){
-				inventoryArray.push_back(inv);
+				inventoryArray.push_back(inv.toJson());
 			}
 			j["Inventory"]=inventoryArray;
 			json taskArray=json::array();
 			for(const auto& tsk : task){
-				taskArray.push_back(tsk);
+				taskArray.push_back(tsk.toJson());
 			}
 			j["FarmingTasks"]=taskArray;
+			return j;
 		}
 		void fromJson(const json& j){
 			username=j.value("UserName","");
@@ -53,9 +59,9 @@ struct Farmers::farmersInfo{
 			second_name=j.value("Second_Name","");
 			year_of_birth=j.value("Year_Of_Birth",0);
 			farm_location=j.value("Location","");
-			farm_name=j.valur("Farm_Name","");
-			operatons_describtion=j.value("About_Farm","");
-			contact_number=j.value("Contact","");
+			farm_name=j.value("Farm_Name","");
+			operations_describtion=j.value("About_Farm","");
+			contact_number=j.value("Contact",0);
 			produce.clear();
 			if(j.contains("Produce_Records") && j["Produce_Records"].is_array()){
 				for(const auto& item : j["Produce_Records"]){
@@ -73,7 +79,7 @@ struct Farmers::farmersInfo{
 				}
 			}
 			task.clear();
-			if(j.contains("FarmingTAsks") && j["FarmingTasks"].isarray()){
+			if(j.contains("FarmingTAsks") && j["FarmingTasks"].is_array()){
 				for(const auto& item : j["FarmingTasks"]){
 					TaskManager t;
 					t.fromJson(item);
@@ -88,10 +94,10 @@ struct Farmers::farmersInfo{
 };
 
 void Farmers::loadFarmer(){
-	frm->farmersList=toJsonUtility::readCollectionFromFile<Farmers::farmersInfo>("farmers.json");
+	frm->farmersList=readCollectionFromFile<Farmers::farmersInfo::farmer>("farmers.json");
 }
 void Farmers::saveFarmer(){
-	toJsonUtility::writeToFile("farmersJson",toJsonCollection(frm->farmersList));
+	writeToFile("farmersJson",toJsonCollection(frm->farmersList));
 }
 
 // constructors for the class
@@ -102,16 +108,15 @@ Farmers::Farmers() : frm(std::make_shared<farmersInfo>()){
 Farmers::~Farmers(){
 	saveFarmer();
 }
-namespace sharedUtils{
-	bool isCurrent(){
-		for(const auto& user : frm->farmersList){
-			if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
-				return true;
-			}
-			return false;
+
+bool isCurrent(){
+	for(const auto& user : frm->farmersList){
+		if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			return true;
 		}
+		return false;
 	}
-}
+	}
 void Farmers::myProfile(){
 	std::cout<<"\n========MY PROFILE=========\n";
 	int choise;
@@ -122,7 +127,7 @@ void Farmers::myProfile(){
 	std::cout<<"\n4.Exit! ";
 
 	switch(choise){
-		case 1; createProfile(); break;
+		case 1: createProfile(); break;
 		case 2: viewProfile(); break;
 		case 3: editProfile(); break;
 		case 4: break;
@@ -132,7 +137,7 @@ void Farmers::myProfile(){
 
 void Farmers::createProfile(){
 	std::cout<<"\n========CRAETE MY PROFILE========\n";
-	Farmers::farmerInfo::farmer newFarmer;
+	Farmers::farmersInfo::farmer newFarmer;
 	std::cout<<"\nEnter your details";
 	std::cout<<"\nUserName(Should be the one used for login): ";
 	std::getline(std::cin,newFarmer.username);
@@ -152,7 +157,7 @@ void Farmers::createProfile(){
 	std::cout<<"\nContact: ";
 	std::cin>>newFarmer.contact_number;
 	std::cin.ignore();
-	frm->farmersList.push_back(std::make_shared<farmerInfo::farmer>(newFarmer));
+	frm->farmersList.push_back(std::make_shared<farmersInfo::farmer>(newFarmer));
 	saveFarmer();
 	std::cout<<"\nYour details were saved successively.";
 }
@@ -160,18 +165,18 @@ void Farmers::createProfile(){
 
 void Farmers::viewProfile(){
 	for(const auto& user : frm->farmersList){
-		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+		if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
 			std::cout<<"\n========PROFILE VIEWER========\n";
 			std::cout<<"\nYour profile is: ";
 			std::cout<<"\n----------------------------------------------\n";
-			std::cout<<"\nUserName: "<< user.username
-				<<"\nFirst_Name: "<< user.first_name
-				<<"\nSecond_Name: "<< user.second_name
-				<<"\nYear_Of_Birth: "<< user.year_of_birth
-				<<"\nLocation: "<< user.farm_location
-				<<"\nFarm_Name: "<< user.farm_name
-				<<"\nAbout_Farm: "<< user.operations_describtion
-				<<"\nContact: "<< user.contact_number
+			std::cout<<"\nUserName: "<< user->username
+				<<"\nFirst_Name: "<< user->first_name
+				<<"\nSecond_Name: "<< user->second_name
+				<<"\nYear_Of_Birth: "<< user->year_of_birth
+				<<"\nLocation: "<< user->farm_location
+				<<"\nFarm_Name: "<< user->farm_name
+				<<"\nAbout_Farm: "<< user->operations_describtion
+				<<"\nContact: "<< user->contact_number
 				<<"\n";
 			std::cout<<"\n-----------------------------------------------\n";
 		}else{
@@ -181,37 +186,39 @@ void Farmers::viewProfile(){
 }
 //method to edit the users profile
 void Farmers::editProfile(){
-	if(sharedUtils::isCurrent()){
-		std::cout<<"\n=======EDIT PROFILE==========\n";
-		std::cout<<"\nYour current details are: ";
-		viewProfile();
-		std::cout<<"\nEnter your new details: ";
-		std::cout<<"\nFirst_name: ";
-		std::getline(std::cin,farmersList.first_name);
-		std::cout<<"\nSecond_Name: ";
-		std::getline(std::cin,farmersList.second_name);
-		std::cout<<"\nLocation: ";
-		std::getline(std::cin,farmersList.farm_location);
-		std::cout<<"\nFarm_name: ";
-		std::getline(std::cin,farmerList.farm_name);
-		std::cout<<"\nAbout_Farm: ";
-		std::getline(std::cin,farmersList.operations_describtion);
-		std::cout<<"\nYear_Of_Birth: ";
-		std::cin>>year_of_birth;
-		std::cin.ignore();
-		std::cout<<"\nContact: ";
-		std::cin>>contact_number;
-		std::cin.ignore();
-		saveFarmer();
-	}else{
-		std::cout<<"\nSorry! Your details were not found in the database.Create profile to edit.";
+	for(const auto& user : frm->farmersList){       
+		if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+		        std::cout<<"\n=======EDIT PROFILE==========\n";
+		        std::cout<<"\nYour current details are: ";
+		        viewProfile();
+		        std::cout<<"\nEnter your new details: ";
+		        std::cout<<"\nFirst_name: ";
+		        std::getline(std::cin,user->first_name);
+		        std::cout<<"\nSecond_Name: ";
+		        std::getline(std::cin,user->second_name);
+		        std::cout<<"\nLocation: ";
+		        std::getline(std::cin,user->farm_location);
+		        std::cout<<"\nFarm_name: ";
+		        std::getline(std::cin,user->farm_name);
+		        std::cout<<"\nAbout_Farm: ";
+		        std::getline(std::cin,user->operations_describtion);
+		        std::cout<<"\nYear_Of_Birth: ";
+		        std::cin>>user->year_of_birth;
+		        std::cin.ignore();
+		        std::cout<<"\nContact: ";
+		        std::cin>>user->contact_number;
+		        std::cin.ignore();
+		        saveFarmer();
+	        }else{
+		        std::cout<<"\nSorry! Your details were not found in the database.Create profile to edit.";
+	        }
 	}
 }
 //**************************************************************************************************************
 //I am done with the profile classese;
 //***********************************************************************************************************
 //I am now starting the  produce methods
-void myProduce(){
+void Farmers::myProduce(){
 	int choise;
 	std::cout<<"\n========MY PRODUCE MANAGER============";
 	std::cout<<"\nWould you like to: ";
@@ -228,18 +235,18 @@ void myProduce(){
 		case 1: addProduceTypes(); break;
 		case 2: viewProduceTypes(); break;
 		case 3: recordHarvest(); break;
-		case 4: editProduceType(); break;
+		case 4: editProduceTypes(); break;
 		case 5: deleteProduce(); break;
-		case 6: viewHarvetHistory(); break;
+		case 6: viewHarvestHistory(); break;
 		case 7: break;
 		default: std::cout<<"\nPlease enter one of the options above."; break;
 	}
 }
  void Farmers::addProduceTypes(){
 	 for(const auto& user : frm->farmersList){
-                if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+                if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
 			std::cout<<"\n======ADD PRODUCE========\n";
-			ProduceRecord newProduce;
+			ProduceRecords newProduce;
 			std::string choise;
 			do{
 				std::cout<<"\nEnter produce:";
@@ -247,12 +254,11 @@ void myProduce(){
 				std::getline(std::cin,newProduce.produce_type);
 				std::cout<<"\nUnit of measurement: ";
 				std::getline(std::cin,newProduce.unit);
-				newProduce.add_timestamp=TimestampManager::createTimestamp();
-				newProduce.quantity=0.0;
+				newProduce.add_timestamp=TimestampManager::createTimestamp();;
 				newProduce.update_timestamp=TimestampManager::createTimestamp();
 				newProduce.total_quantity=0.0;
 				newProduce.average_quantity=0.0;
-				user.produce.push_back(newProduce);
+				user->produce.push_back(newProduce);
 				saveFarmer();
 				std::cout<<"\nNew produce added successively.";
 				std::cout<<"\nWould you like to add another produce type(Y/N?";
@@ -266,7 +272,7 @@ void myProduce(){
 
 void Farmers::viewProduceTypes(){
 	for(const auto& user : frm->farmersList){       
-		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+		if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
 			std::cout<<"\n==============MY PRODUCE TYPES=============\n";
 			std::cout<<"\nThe produce types you deal in are:";
 			std::cout<<std::left<<std::setw(20)<<"Produce_Type: "
@@ -274,7 +280,7 @@ void Farmers::viewProduceTypes(){
 				<<std::setw(15)<<"Created_At: "
 				<<std::setw(15)<<"Updated_At: "
 				<<"\n----------------------------------------\n";
-			for(const auto& item : user.produce){
+			for(const auto& item : user->produce){
 				std::cout<<std::left<<std::setw(20)<<item.produce_type
 					<<std::setw(15)<<item.unit
 					<<std::setw(15)<<item.add_timestamp
@@ -288,17 +294,17 @@ void Farmers::viewProduceTypes(){
 
 void Farmers::recordHarvest(){
 	for(const auto& user : frm->farmersList){
-                if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
-			std::cout<<"\n=========RECORD MY PRODUCE=========\N";
+                if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			std::cout<<"\n=========RECORD MY PRODUCE=========\n";
 			std::string choise;
 			std::string record;
 			do{
 				std::cout<<"\nEnter the produce you wish to record: ";
 				std::getline(std::cin,record);
-				auto it=std::find_if(user.produce.begin(),user.produce.end(),[&record](const std::shared_ptr<ProduceRecord>& p){
+				auto it=std::find_if(user->produce.begin(),user->produce.end(),[&record](const std::shared_ptr<ProduceRecord>& p){
 						return p->produce_type==record;
 					});
-				if(it!=user.produce.end()){
+				if(it!=user->produce.end()){
 					double quantity;
 					std::string type;
 					std::string time;
@@ -324,9 +330,9 @@ void Farmers::recordHarvest(){
 	}
 }
 
-void Farmers::editProduceType(){
+void Farmers::editProduceTypes(){
 	for(const auto& user : frm->farmersList){      
-		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+		if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
 			std::cout<<"\n============EDIT MY PRODUCE============\n";
 			viewProduceTypes();
 			std::string choise;
@@ -334,10 +340,10 @@ void Farmers::editProduceType(){
 				std::string edit;
 				std::cout<<"\nEnter the name of the produce type you wish to edit: ";
 				std::getline(std::cin,edit);
-				auto it=std::find_if(user.produce.begin(),user.produce.end(),[&edit](const std::shared_ptr<ProduceRecords>& r){
+				auto it=std::find_if(user->produce.begin(),user->produce.end(),[&edit](const std::shared_ptr<ProduceRecords>& r){
 						return r->produce_type==edit;
 					});
-				if(it!=user.prodece.end()){
+				if(it!=user->prodece.end()){
 				        std::cout<<"\nNew produce details: ";
 				        std::cout<<"\nProduce name: ";
 				        std::getline(std::cin,(*it)->produce_type);
@@ -359,7 +365,7 @@ void Farmers::editProduceType(){
 
 void Farmers::deleteProduce(){
 	for(const auto& user : frm->farmersList){       
-		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+		if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
 			std::cout<<"\n==========DELETE PRODUCE TYPE=============\n";
 			viewProduceTypes();
 			std::string choise;
@@ -367,8 +373,8 @@ void Farmers::deleteProduce(){
 				std::string del;
 				std::cout<<"\nEnter the name of the produce you wish to delete: ";
 				std::getline(std::cin,del);
-				std::erase(std::remove_if(user.produce.begin(),user.produce.end(),[&del](const ProduceRecords& r){
-							return  r.produce_type==del;}),user.produce.end());
+				std::erase(std::remove_if(user->produce.begin(),user->produce.end(),[&del](const ProduceRecords& r){
+							return  r.produce_type==del;}),user->produce.end());
 				saveFarmer();
 				std::cout<<"\nProduce successively deleted.";
 				std::cout<<"\nWould you like to delete another item(y/n)? ";
@@ -382,7 +388,7 @@ void Farmers::deleteProduce(){
 
 void Farmers::viewHarvestHistory(){
 	for(const auto& user : frm->farmersList){     
-		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+		if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
 			std::cout<<"\n=========VIEW PRODUCE HISTORY=========\n";
 			int choise;
 			std::cout<<"\nWould you like to view history of: "
@@ -398,10 +404,10 @@ void Farmers::viewHarvestHistory(){
 					std::string option;
 					std::cout<<"\nEnter the name of the produce you wish to view: ";
 					std::getline(std::cin,option);
-					auto it=std::find_if(user.produce.begin(),user.produce.end(),[&option](const ProduceRecord& p){
+					auto it=std::find_if(user->produce.begin(),user->produce.end(),[&option](const ProduceRecord& p){
 							return p.produce_type==option;
 						});
-					if(it!=user.produce.end()){
+					if(it!=user->produce.end()){
 						std::cout<<"\nThe records are:";
 						std::cout<<std::left
 							<<std::setw(20)<<"Produce_Type: "
@@ -432,7 +438,7 @@ void Farmers::viewHarvestHistory(){
                                         <<std::setw(15)<<"Units: "
                                         <<std::setw(20)<<"Recorded_At: "   
 					<<"\n---------------------------------------------\n";
-				for(const auto& item :  user.produce.harvestHistory){
+				for(const auto& item :  user->produce.harvestHistory){
 					std::cout<<std::left
                                                 <<std::setw(20)<<item.produceType
                                                 <<std::setw(15)<<item.quantity  
@@ -476,7 +482,7 @@ void Farmers::manageInventory(){
 
 void Farmers::AddItem(){
 	for(const auto& user : frm->farmersList){   
-		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+		if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
 			std::cout<<"\n==========ADD ITEM============\n";
 			std::string choise;
 			do{
@@ -497,6 +503,7 @@ void Farmers::AddItem(){
 				std::getline(std::cin,newItem.alertThreshold);
 				newItem.date_of_entry=TimestampManager::createTimestamp();
 				newItem.date_of_update=TimestampManager::createTimestamp();
+				user->inventory.push_back(newItem);
 				saveFarmer();
 				std::cout<<"\nYour details were saved successively.";
 				std::cout<<"\nWould you like to add another item(y/n)? ";
@@ -509,7 +516,7 @@ void Farmers::AddItem(){
 }
  void Farmers::viewInventory(){
 	 for(const auto& user : frm->farmersList){ 
-		 if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+		 if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
 			 std::cout<<"\==========MY INVENTORY=============\N";
 			 std::cout<<std::left<<std::setw(20)<<"Type of produce: "
 				 <<std::setw(20)<<"Name of produce: "
@@ -520,7 +527,7 @@ void Farmers::AddItem(){
 				 <<std::setw(20)<<"Date Of Entry: "
 				 <<std::setw(20)<<"Date Of Update: "
 				 <<"\n-----------------------------------------------\n";
-			 for(const auto& item : user.inventory){
+			 for(const auto& item : user->inventory){
 				 std::cout<<std::left<<std::setw(20)<<item.type
 					 <<std::setw(20)<<item.name
 					 <<std::setw(20)<<item.describtion
@@ -538,7 +545,7 @@ void Farmers::AddItem(){
 
 void Faremrs::updateItemQuantity(){
 	for(const auto& user : frm->farmersList){   
-		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+		if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
 			std::cout<<"\=========UPDATE QUANTITY==========\n";
 			viewInventory();
 			std::string choise;
@@ -546,10 +553,10 @@ void Faremrs::updateItemQuantity(){
 				std::string option;
 				std::cout<<"\nEnter the name of the item to update(Maize germ,Broiler Starter,Tractors): ";
 				std::getline(std::cin,option);
-				auto it=std::find_if(user.inventory.begin(),user.inventory.end(),[&option](const InventoryItem& i){
+				auto it=std::find_if(user->inventory.begin(),user->inventory.end(),[&option](const InventoryItem& i){
 						return i.name==option;
 					});
-				if(it!=user.inventory.end()){
+				if(it!=user->inventory.end()){
 					std::cout<<"\nEnter new quantity for " <<option<< ": ";
 					std::getline(std::cin,(*it)->quantity);
 					saveFarmer();
@@ -568,17 +575,17 @@ void Faremrs::updateItemQuantity(){
 
 void Farmers::recordItemUsage(){
 	for(const auto& user : frm->farmersList){
-		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+		if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
 			std::cout<<"\n==========USAGE RECORDING==========\n;
 			std::string choise;
 			do{
 				std::string option;
 				std::cout<<"\nEnter the name of item you wish to use: ";
 				std::getline(std::cin,option);
-				auto it=std::find_if(user.inventory.begin(),user.inventory.end(),[&option](const InventoryItem& i){
+				auto it=std::find_if(user->inventory.begin(),user->inventory.end(),[&option](const InventoryItem& i){
 								return i.name==option;
 							});
-				if(it!=user.inventory.end()){
+				if(it!=user->inventory.end()){
 					std::string name;
 					std::string purpose;
 					std::string date_of_use;
@@ -613,8 +620,8 @@ void Farmers::recordItemUsage(){
 
 bool Farmers::setAlertThreshold(){
 	for(const auto& user : frm->farmersList){    
-		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
-			for(const auto& item : user.inventory){
+		if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			for(const auto& item : user->inventory){
 				if(item.quantity <= item.alertThreshold){
 					std::cout<<"\n"<<item.name <<"Is below alert threshold. PLease top up amount to avoid scarcity";
 					return true;
@@ -629,7 +636,7 @@ bool Farmers::setAlertThreshold(){
 
 void Farmers::checklowStocAlerts(){
 	for(const auto& user : frm->farmersList){ 
-		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+		if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
 			std::cout<<"\n==============LOW STOCK ALERTS============\n";
 			setAlertThreshold();
 		}else{
@@ -640,7 +647,7 @@ void Farmers::checklowStocAlerts(){
 
 void Farmers::viewUsageHistory(){
 	for(const auto& user : frm->farmersList){     
-		if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+		if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
 			std::cout<<"==============USAGE HISTORY===================\n";
 			std::cout<<"\nWould you like to view usage history for:";
 			std::cout<<"\n1.One item: ";
@@ -655,7 +662,7 @@ void Farmers::viewUsageHistory(){
 					std::string option;
 					std::cout<<"\nEnter the name of the item you wish to view history: ";
 					std::getline(std::cin,option);
-					auto it=std::find_if(user.inventory.begin(),user.inventory.end()[&option](const InventoryItem& i){
+					auto it=std::find_if(user->inventory.begin(),user->inventory.end()[&option](const InventoryItem& i){
 							return i.name==option;
 						});
 					std::cout<<std::left<<std::setw(20)<<"Item: "
@@ -664,7 +671,7 @@ void Farmers::viewUsageHistory(){
 						<<std::setw(20)<<"Date Used: "
 						<<std::setw(20)<<"Employee Using: "
 						<<"\n--------------------------------------\n";
-					for(const auto& item : user.inventory){
+					for(const auto& item : user->inventory){
 						if(item.name==(*it)->name){
 							std::cout<<std::left<<std::setw(20)<<item.name
 								<<std::setw(15)<<item.amount_used
@@ -683,7 +690,7 @@ void Farmers::viewUsageHistory(){
 					<<std::setw(20)<<"Date Used: "
                                         <<std::setw(20)<<"Employee Using: "
                                         <<"\n--------------------------------------\n";
-				for(const auto& item : user.inventory){
+				for(const auto& item : user->inventory){
 					std::cout<<std::left<<std::setw(20)<<item.name
 						<<std::setw(15)<<item.amount_used
                                                 <<std::setw(20)<<item.purpose
@@ -727,7 +734,7 @@ void Farmers::ManageTasks(){
 
 void Farmers::addTasks(){
 	for(const auto& user : frm->farmersList){
-                if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+                if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
 			std::string  choise;
 			std::cout<<"\n===========TASK ADDER===========\n";
 			do{
@@ -744,7 +751,7 @@ void Farmers::addTasks(){
 				newTask.complete=false;
 				newTask,created_at=TimestampManager::createTimestamp();
 				newTask.updated_at=TimestampManager::createTimestamp();
-				user.task.push_back(newTask);
+				user->task.push_back(newTask);
 				saveFarmer();
 				std::cout<<"\nYour details were saved successvely!!";
 				std::cout<<"\nWould you like to add another task(y/n)? ";
@@ -758,7 +765,7 @@ void Farmers::addTasks(){
 
 void Farmers::viewTasks(){
 	for(const auto& user : frm->farmersList){
-                if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+                if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
 			std::cout<<"\n==========TASK AVAILABLE=============\n";
 			std::cout<<std::left<<std::setw(25)<<"Task"
 				<<std::setw(25)<<"Describtion"
@@ -768,7 +775,7 @@ void Farmers::viewTasks(){
 				<<std::setw(15)<<"Due_Date"
 				<<std::setw(10)<<"Is_complete"
 				<<"\n-------------------------------\n";
-			for(const auto& item : user.task){
+			for(const auto& item : user->task){
 				std::cout<<std::left<<std::setw(25)<<item.name
 					<<std::setw(25)<<(item.describtion.length()>24 ? item.describtion.substr(0,24) + "..." : item.describtion)
 					<<std::setw(15)<<item.priority
@@ -785,7 +792,7 @@ void Farmers::viewTasks(){
 
 void Farmers::editTasks(){
 	for(const auto& user : frm->farmersList){
-                if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+                if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
 			std::cout<<"\n===========EDIT TASKS==========\n";
 			std::string choise;
 			viewTasks();
@@ -793,7 +800,7 @@ void Farmers::editTasks(){
 				std::string option;
 				std::cout<<"\nEnter the name of task you wish to edit: ";
 				std::getline(std::cin,option);
-				auto it<<std::find_if(user.task.begin(),user.task.end(),[&option](const TaskMnager& t){
+				auto it<<std::find_if(user->task.begin(),user->task.end(),[&option](const TaskMnager& t){
 						return t.name==option;
 					})
 				std::cout<<"\n1.Task name: "<<(*it)->name
@@ -841,14 +848,14 @@ void Farmers::editTasks(){
 
 void Farmers::markAsComplete(){
 	for(const auto& user : frm->farmersList){
-                if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+                if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
 			std::cout<<"\n============MARK AS COMPLETE============\n";
 			std::string choise;
 			do{
 				std::cout<<"\nEnter the name of task you wish to mark as complete: ";
 				std::string option;
 				std::getline(std::cin,option);
-				auto it=std::find_if(user.task.begin(),user.task.end(),[&option](const TaskManager& t){
+				auto it=std::find_if(user->task.begin(),user->task.end(),[&option](const TaskManager& t){
 						return t.name==name;
 					});
 				if((*it)->complete=false){
@@ -873,8 +880,8 @@ void Farmers::markAsComplete(){
 
 bool isComplete(){
 	for(const auto& user : frm->farmersList){
-                if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
-			for(const auto& item : user.task){
+                if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+			for(const auto& item : user->task){
 				if(item.due_date < TimestampManager::createTimestamp()){
 					std::cout<<"\nTask  name: "<<item.name
 						<<"\nTask priority: "<<item.priority
@@ -894,7 +901,7 @@ bool isComplete(){
 
 void Farmers::checkOverdueTaska(){
 	for(const auto& user : frm->farmersList){
-                if(user.username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
+                if(user->username==AuthSystm::getUsername(AuthSystm::getSessions().front())){
 			isComplete();
 		}else{
 			std::cout<<"\nSorry but your details were not found in the database.";

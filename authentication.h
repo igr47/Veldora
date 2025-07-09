@@ -1,27 +1,29 @@
-#ifdef AUTH_H
+#ifndef AUTH_H
 #define AUTH_H
 #include <vector>
 #include <string>
 #include <ctime>
+#include <nlohmann/json.hpp>
+using json=nlohmann::json;
 
 inline constexpr int SESSION_TOKEN_LENGTH=32;
 inline constexpr int RECOVERY_TOKEN_LENGTH=32;
 inline constexpr int SESSION_DURATION=1800;
 inline constexpr int RECOVERY_TOKENEXPIARY=3600;
 inline const std::string FARMER_FILE="faemers.json";
-inline const std::sting COOPERATIONS_FILE="cooperations.json";
+inline const std::string COOPERATIONS_FILE="cooperations.json";
 inline const std::string SESSIONS_FILE="sessions.json";
 inline const std::string RECOVERY_TOKENS_FILE="recovery.json";
 enum class UserRole{
 	FARMER,
 	COOPERATION,
 	UNKNOWN
-}
+};
 
 namespace securityUtils{
 	std::string argon2_hash(const std::string& password);
 	std::string argon2_hash(const std::string& answer);
-	bool verify_answer(const std::string& hashed_answer,const std::string& answer)
+	bool verify_answer(const std::string& hashed_answer,const std::string& answer);
 	bool verify_password(const std::string& hashed_password, const std::string& password);
 	std::string generateRandomString(size_t length);
 }
@@ -29,7 +31,7 @@ namespace securityUtils{
 class  User{
 	public:
 	        std::string username;
-	        std::strinh passwordHash;
+	        std::string passwordHash;
 	        std::string email;
 	        std::string securityQuestion;
 	        std::string securityAnswer;
@@ -47,7 +49,7 @@ class Session{
 		std::string token;
 		time_t expiary;
 		UserRole role;
-		Session(const string& uname="",UserRole r=UserRolE::UNKNOWN);
+		Session(const std::string& uname="",UserRole r=UserRole::UNKNOWN);
 		bool isValid() const;
 		json toJson() const;
 		void fromJson(const json& j);
@@ -58,7 +60,7 @@ class RecoveryToken{
 		std::string token;
 		time_t expiary;
 		UserRole role;
-		RecoveryToken(const std::sting& uname="",UserRole r=UserRole::UNKNOWN);
+		RecoveryToken(const std::string& uname="",UserRole r=UserRole::UNKNOWN);
 		bool isValid() const;
 		json toJson() const;
 		void fromJson(const json& j);
@@ -66,10 +68,10 @@ class RecoveryToken{
 
 class AuthSystm{
 	private:
-		std::vector<std:;shared_ptr<User>> farmers;
+		std::vector<std::shared_ptr<User>> farmers;
 		std::vector<std::shared_ptr<User>> cooperations;
 		std::vector<std::shared_ptr<Session>> sessions;
-		std::vector<std:;shared_ptr<TecoveryToken>> recoveryTokens;
+		std::vector<std::shared_ptr<RecoveryToken>> recoveryTokens;
 
 		void loadFarmers();
 		void saveFarmers();
@@ -82,15 +84,15 @@ class AuthSystm{
 		void cleanupExpiredTokens();
 		std::string getRoleFilename(UserRole role) const;
 		std::vector<std::shared_ptr<User>>& getUserByRole(UserRole role) const;
-		const std:;vector<std::shared_ptr<User>>& getUserByRole(UserRole role) const;
+		//const std::vector<std::shared_ptr<User>& getUserByRole(UserRole) const;
 	public:
 		AuthSystm();
 		~AuthSystm();
 		std::vector<std::shared_ptr<Session>> getSessions() const;
-		bool registerUser(const std:;string& username,const std:;string& password,const std:;string& email,const std::string& question,const std:;string& answer,UserRele role);
-		std::string logIn(const std:;string& username,const std:;string& password);
+		bool registerUser(const std::string& username,const std::string& password,const std::string& email,const std::string& question,const std::string& answer,UserRole role);
+		std::string logIn(const std::string& username,const std::string& password);
 		bool isLoggedin(const std::string& token);
-		void logOut(const std::string& tolen);
+		void logOut(const std::string& token);
 		std::string getUsername(const std::string& token);
 		UserRole getUserRole(const std::string& token);
 		std::string generateRecoveryToken(const std::string& username);

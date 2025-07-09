@@ -1,6 +1,14 @@
-#include "filesaver.h"
+#include "fileSaver.h"
 #include "farmers.h"
 #include "cooperatives.h"
+#include <nlohmann/json.hpp>
+#include <vector>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <stdexcept>
+#include <memory>
+using json=nlohmann::json;
 
 template<typename T>
 json toJsonUtility::toJsonCollection(std::vector<std::shared_ptr<T>>& items) {
@@ -14,8 +22,8 @@ json toJsonUtility::toJsonCollection(std::vector<std::shared_ptr<T>>& items) {
 }
 
 // Explicit template instantiations
-template json toJsonUtility::toJsonCollection<Farmer>(std::vector<std::shared_ptr<Farmer>>&);
-template json toJsonUtility::toJsonCollection<Cooperative>(std::vector<std::shared_ptr<Cooperative>>&);
+template json toJsonUtility::toJsonCollection<Farmers::farmerInfo::farmer>(std::vector<std::shared_ptr<Farmers::farmerInfo>>&);
+
 
 void toJsonUtility::writeToFile(const std::string& filename, const json& data) {
     std::ofstream file(filename);
@@ -61,5 +69,5 @@ std::vector<std::shared_ptr<T>> toJsonUtility::readCollectionFromFile(const std:
 }
 
 // Explicit template instantiations
-template std::vector<std::shared_ptr<Farmer>> toJsonUtility::readCollectionFromFile<Farmer>(const std::string& filename);
-template std::vector<std::shared_ptr<Cooperative>> toJsonUtility::readCollectionFromFile<Cooperative>(const std::string& filename);
+template std::vector<std::shared_ptr<Farmers::farmersInfo::farmer>> toJsonUtility::readCollectionFromFile<Farmers::farmersInfo::farmer>(const std::string& filename);
+

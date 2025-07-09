@@ -1,4 +1,4 @@
-#ifdef STRUCTS_H
+#ifndef STRUCTS_H
 #define STRUCTS_H
 #include <string>
 #include <vector>
@@ -60,7 +60,7 @@ struct ProduceRecords{
 	void fromJson(const json& j){
 		produce_type=j.value("Produce_Type","");
 		unit=j.value("Unit_Of_Measurement","");
-		add_timestamp=j.value("Created_At,"");
+		add_timestamp=j.value("Created_At","");
 		update_timestamp=j.value("Updated_At","");
 		for(const auto& val : j.value("Produce_Quantity",json::array())){
 			if(val.is_number()){
@@ -93,19 +93,19 @@ struct InventoryItem {
 			};
 	    }
 	    void fromJson(const json& j){
-		    name=j.value("Item","');
+		    name=j.value("Item","");
 		    purpose=j.value("Purpose_Of_Item","");
 		    date_used=j.value("Date_Used","");
 		    employee_using=j.value("Employee_Using","");
-		    amount_used=j.value("Amount_Used","");
+		    amount_used=j.value("Amount_Used",0.0);
 	    }
     };
 
     std::string name; // "Maize Germ",,"Chicken Starter","Tractors"
     std::string type; // "Seed", "Fertilizer", "Equipment", "CowFeed","ChickenFeed",etc.
-    std::string descrition;
+    std::string describtion;
     std::string date_of_entry;
-    std::string date_of_uodate;
+    std::string date_of_update;
     double quantity; // "90",etc
     std::string unit; // "kg", "liters", "units", etc.
     double alertThreshold; // Minimum quantity before alert 
@@ -163,8 +163,8 @@ struct TaskManager{
 			{"Due_Date",due_date},
 			{"Priority",priority},
 			{"Updated_At",updated_at},
-			{"Is_Complete",copmlete},
-		}
+			{"Is_Complete",complete}
+		};
 	}
 	void fromJson(const json& j){
 		name=j.value("Task_Name","");
@@ -172,10 +172,10 @@ struct TaskManager{
 		created_at=j.value("Created_At","");
 		due_date=j.value("Due_Dae","");
 		priority=j.value("Priority","");
-		update_at=j.value("Updated_At","");
+		updated_at=j.value("Updated_At","");
 		complete=j.value("Is_Copmlete",false);
 	}
 };
-
+#endif
 
 	
